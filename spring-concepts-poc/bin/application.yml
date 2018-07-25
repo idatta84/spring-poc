@@ -1,0 +1,34 @@
+server:
+  port: 8080
+  
+spring:
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    
+# MONGODB (MongoProperties)
+  data: 
+    mongodb:
+      host: localhost
+      port: 27017
+      database: cloudmongo1
+      uri: mongodb://localhost/test
+      repositories:
+        type: auto
+
+order-entry-queue:
+  topic-exchange-name: tst.excg1
+  routing-key: test1
+  queue-name: TestQueue1
+  
+order-update-queue:
+  topic-exchange-name: tst.excg2
+  routing-key: test2
+  queue-name: TestQueue2
+
+logging:
+  file: logs/order-mgmt-svc.log     
+  
