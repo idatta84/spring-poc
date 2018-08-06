@@ -3,6 +3,8 @@ package com.springconcepts.controller;
 import java.util.List;
 import java.util.Optional;
 
+//import javax.enterprise.event.Event;
+//import javax.inject.Inject;
 import javax.validation.Valid;
 
 import org.slf4j.Logger;
@@ -15,23 +17,29 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.springconcepts.beans.Customer;
 import com.springconcepts.beans.ErrorResponse;
 import com.springconcepts.beans.Order;
 import com.springconcepts.beans.OrderDetailResponse;
 import com.springconcepts.beans.OrderEntryResponse;
 import com.springconcepts.bo.OrdMgmtBO;
 import com.springconcepts.constants.GeneralConstants;
+import com.springconcepts.designpatterns.singleton.SingletonPoolManager;
 
 @RestController
 public class OrdMgmtController {
 
 	@Autowired
 	private OrdMgmtBO ordMgmtBO;
-	
+
+	/*@Autowired
+	private Event<Customer> customerEvent;
+*/
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	/**
 	 * Service to add order
+	 * 
 	 * @param order
 	 * @return
 	 */
@@ -41,7 +49,8 @@ public class OrdMgmtController {
 		ErrorResponse errResponse = ordMgmtBO.addOrder(order);
 
 		OrderEntryResponse orderEntryResponse = new OrderEntryResponse();
-		// On error, respond back with generic error message else return tracking number
+		// On error, respond back with generic error message else return
+		// tracking number
 		if (Optional.ofNullable(errResponse).isPresent() && Optional.ofNullable(errResponse.getErrorCode()).isPresent()
 				&& Optional.ofNullable(errResponse.getErrorDesc()).isPresent()) {
 			orderEntryResponse.setErrorDetails(errResponse.getErrorCode(), errResponse.getErrorDesc());
@@ -49,35 +58,46 @@ public class OrdMgmtController {
 		} else {
 			orderEntryResponse.setTrackingId(order.getTrackingId());
 			orderEntryResponse.setOrderStatus(order.getStatus());
-			String logString = (new StringBuilder()).append("Order submitted successfully. TrackingId=").append(orderEntryResponse.getTrackingId()).toString();
+			String logString = (new StringBuilder()).append("Order submitted successfully. TrackingId=")
+					.append(orderEntryResponse.getTrackingId()).toString();
 			logger.info(logString);
 		}
 		return orderEntryResponse;
 	}
-	
+
 	/**
-	 * Service to fetch all order details. 
+	 * Service to fetch all order details.
+	 * 
 	 * @param trackingId
 	 * @param display
 	 * @return
 	 */
 	@RequestMapping(method = RequestMethod.GET, path = "/orders", produces = GeneralConstants.CONTENT_TYPE_APPLICATION_JSON)
-	public List<OrderDetailResponse> getAllOrderDetails(@RequestParam(value = "display", defaultValue="all") String display) {
+	public List<OrderDetailResponse> getAllOrderDetails(
+			@RequestParam(value = "display", defaultValue = "all") String display) {
 
 		List<OrderDetailResponse> orderDetailResponseList = ordMgmtBO.getAllOrderDetails();
 
-		/*if(display.equalsIgnoreCase("status")){
-			Order order = new Order();
-			order.setTrackingId(trackingId);
-			order.setStatus(orderDetailResponse.getOrder().getStatus());
-			orderDetailResponse.setOrder(order);
-			logger.info("Returning only order status");
-		}*/
+		SingletonPoolManager.getInstance();
+
+		if (Optional.ofNullable(orderDetailResponseList).isPresent() && !orderDetailResponseList.isEmpty()
+				&& Optional.ofNullable(orderDetailResponseList.get(0).getOrder().getCustomer()).isPresent()) {
+			//customerEvent.fire(orderDetailResponseList.get(0).getOrder().getCustomer());
+		}
+
+		/*
+		 * if(display.equalsIgnoreCase("status")){ Order order = new Order();
+		 * order.setTrackingId(trackingId);
+		 * order.setStatus(orderDetailResponse.getOrder().getStatus());
+		 * orderDetailResponse.setOrder(order);
+		 * logger.info("Returning only order status"); }
+		 */
 		return orderDetailResponseList;
 	}
-	
+
 	/**
 	 * Service to update order
+	 * 
 	 * @param order
 	 * @return
 	 */
@@ -85,11 +105,12 @@ public class OrdMgmtController {
 	public OrderEntryResponse updateOrder(@PathVariable String trackingId, @RequestBody Order order) {
 
 		order.setTrackingId(trackingId);
-		
+
 		ErrorResponse errResponse = ordMgmtBO.updateOrder(order);
 
 		OrderEntryResponse orderEntryResponse = new OrderEntryResponse();
-		// On error, respond back with generic error message else return tracking number
+		// On error, respond back with generic error message else return
+		// tracking number
 		if (Optional.ofNullable(errResponse).isPresent() && Optional.ofNullable(errResponse.getErrorCode()).isPresent()
 				&& Optional.ofNullable(errResponse.getErrorDesc()).isPresent()) {
 			orderEntryResponse.setErrorDetails(errResponse.getErrorCode(), errResponse.getErrorDesc());
@@ -97,24 +118,28 @@ public class OrdMgmtController {
 		} else {
 			orderEntryResponse.setTrackingId(order.getTrackingId());
 			orderEntryResponse.setOrderStatus(order.getStatus());
-			String logString = (new StringBuilder()).append("Order updated successfully. TrackingId=").append(orderEntryResponse.getTrackingId()).toString();
+			String logString = (new StringBuilder()).append("Order updated successfully. TrackingId=")
+					.append(orderEntryResponse.getTrackingId()).toString();
 			logger.info(logString);
 		}
 		return orderEntryResponse;
 	}
-	
+
 	/**
-	 * Service to fetch order details by trackingId. It will only return status if a path variable called display is passed with value "status".
+	 * Service to fetch order details by trackingId. It will only return status
+	 * if a path variable called display is passed with value "status".
+	 * 
 	 * @param trackingId
 	 * @param display
 	 * @return
 	 */
 	@RequestMapping(method = RequestMethod.GET, path = "/orders/{trackingId}", produces = GeneralConstants.CONTENT_TYPE_APPLICATION_JSON)
-	public OrderDetailResponse getOrderDetails(@PathVariable String trackingId, @RequestParam(value = "display", defaultValue="all") String display) {
+	public OrderDetailResponse getOrderDetails(@PathVariable String trackingId,
+			@RequestParam(value = "display", defaultValue = "all") String display) {
 
 		OrderDetailResponse orderDetailResponse = ordMgmtBO.getOrderDetails(trackingId);
 
-		if(display.equalsIgnoreCase("status")){
+		if (display.equalsIgnoreCase("status")) {
 			Order order = new Order();
 			order.setTrackingId(trackingId);
 			order.setStatus(orderDetailResponse.getOrder().getStatus());
@@ -126,6 +151,7 @@ public class OrdMgmtController {
 
 	/**
 	 * Service to delete order. Only updates the status to deleted
+	 * 
 	 * @param trackingId
 	 * @param display
 	 * @return
